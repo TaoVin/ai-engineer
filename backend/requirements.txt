@@ -106,3 +106,4 @@ uvloop==0.22.1
 virtualenv==21.4.2
 watchfiles==1.2.0
 websockets==16.0
+aiomysql==0.3.2
