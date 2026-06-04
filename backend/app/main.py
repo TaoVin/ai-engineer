@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from app.config.settings import setting
 from app.core.middleware import RequestLoggingMiddleware
 from app.core.cors import setup_cros_middleware
+from app.api.v1.api import api_router
 def create_app() -> FastAPI:
     """应用工厂函数"""
     app = FastAPI(
@@ -30,7 +31,8 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestLoggingMiddleware)
     # 跨域处理
     setup_cros_middleware(app)
-    
+    app.include_router(api_router, prefix="/api/v1")
+
     return app
 
 
