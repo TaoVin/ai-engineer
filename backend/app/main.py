@@ -3,6 +3,7 @@ from pathlib import Path
 
 import uvicorn
 
+
 # 将项目根目录加入 sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -10,7 +11,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from fastapi import FastAPI
 from app.config.settings import setting
-
+from app.core.middleware import RequestLoggingMiddleware
 
 def create_app() -> FastAPI:
     """应用工厂函数"""
@@ -25,6 +26,8 @@ def create_app() -> FastAPI:
         debug=setting.DEBUG,
     )
     # todo 注册路由、日志、中间件、事件
+    # 日志中间件
+    app.add_middleware(RequestLoggingMiddleware)
 
     return app
 

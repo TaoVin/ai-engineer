@@ -108,3 +108,4 @@ watchfiles==1.2.0
 websockets==16.0
 aiomysql==0.3.2
 gunicorn==26.0.0
+loguru==0.7.3

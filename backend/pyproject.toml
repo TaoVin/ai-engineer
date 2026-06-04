@@ -18,7 +18,8 @@ dependencies = [
     "python-multipart (>=0.0.30,<0.0.31)",
     "email-validator (>=2.3.0,<3.0.0)",
     "aiomysql (>=0.3.2,<0.4.0)",
-    "gunicorn (>=26.0.0,<27.0.0)"
+    "gunicorn (>=26.0.0,<27.0.0)",
+    "loguru (>=0.7.3,<0.8.0)"
 ]
 
 [dependency-groups]
