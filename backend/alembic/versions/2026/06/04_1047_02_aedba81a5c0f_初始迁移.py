@@ -1,8 +1,8 @@
 """初始迁移
 
-Revision ID: afa1814cdbdd
+Revision ID: aedba81a5c0f
 Revises:
-Create Date: 2026-06-03 16:21:49.767446+08:00
+Create Date: 2026-06-04 10:47:02.169035+08:00
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision: str = "afa1814cdbdd"
+revision: str = "aedba81a5c0f"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
