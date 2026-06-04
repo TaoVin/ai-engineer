@@ -12,7 +12,7 @@ if str(ROOT_DIR) not in sys.path:
 from fastapi import FastAPI
 from app.config.settings import setting
 from app.core.middleware import RequestLoggingMiddleware
-
+from app.core.cors import setup_cros_middleware
 def create_app() -> FastAPI:
     """应用工厂函数"""
     app = FastAPI(
@@ -28,7 +28,9 @@ def create_app() -> FastAPI:
     # todo 注册路由、日志、中间件、事件
     # 日志中间件
     app.add_middleware(RequestLoggingMiddleware)
-
+    # 跨域处理
+    setup_cros_middleware(app)
+    
     return app
 
 
