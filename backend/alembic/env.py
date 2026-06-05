@@ -19,7 +19,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.models.base import Base
 # 导入所有模型，确保它们被注册到 Base.metadata
-from app.models.user import User  # noqa: F401
+from app.models.system.user import User  # noqa: F401
 
 target_metadata = Base.metadata
 
