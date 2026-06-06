@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints.system import users, permission, roles
+from app.api.v1.endpoints.system import users, permission, roles, auth
 
 system_api_router = APIRouter()
 
@@ -26,5 +26,13 @@ system_api_router.include_router(
     permission.router,
     prefix="/permission",
     tags=["权限"],
+    responses={404: {"description": "未找到"}},
+)
+
+# 权限路由
+system_api_router.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["认证"],
     responses={404: {"description": "未找到"}},
 )

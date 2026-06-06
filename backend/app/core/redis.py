@@ -99,7 +99,7 @@ class RedisManager:
 
     # ──────────────────── 通用操作 ────────────────────
 
-    async def set(self, key: str, value: Any, expire: int | None = None) -> bool:
+    async def set(self, key: str, value: Any, expire: int | None = None) -> Any:
         """设置键值，可选过期时间(秒)"""
         return await self.client.set(self._key(key), self._encode(value), ex=expire)
 
@@ -156,7 +156,7 @@ class RedisManager:
         raw = await self.client.smembers(self._key(key))
         return {self._decode(m) for m in raw}
 
-    async def sismember(self, key: str, member: Any) -> bool:
+    async def sismember(self, key: str, member: Any) -> Any:
         return await self.client.sismember(self._key(key), self._encode(member))
 
     async def scard(self, key: str) -> int:
