@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import Boolean, Integer, false, func, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -60,7 +60,7 @@ class LogicDeleteMixin:
     """逻辑删除混入类，代码复用模式"""
 
     is_deleted: Mapped[bool] = mapped_column(
-        Boolean, default=false, comment="逻辑删除标记"
+        Boolean, default=False, nullable=True, comment="逻辑删除标记"
     )
     deleted_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, comment="删除时间"

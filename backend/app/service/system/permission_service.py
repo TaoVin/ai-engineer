@@ -1,17 +1,11 @@
-from tkinter.messagebox import NO
 from typing import Any
 
-from dulwich.lru_cache import V
-from rich.pretty import d
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exception import BusinessError
 from app.mapper.system.permission_mapper import permission_crud
 from app.models.system.permission import Permission
-from app.models.system.user import User
 from app.schemas.base import PaginatedResponse
-from app.schemas.system.permission import PermissionDto, PermissionResponse
+from app.schemas.system.permission import PermissionParam, PermissionResponse
 
 class PermissionService:
     
@@ -29,11 +23,12 @@ class PermissionService:
         
     # 查
     async def query_by_id(self, db: AsyncSession, *, id: int) -> Permission | None:
-        return await permission_crud.get(db, id=int) 
+        return await permission_crud.get(db, id=id) 
     
     # 分页查
-    async def query_by_page(self, db: AsyncSession, dto: PermissionDto, page_num: int = 1, page_size: int = 10) -> PaginatedResponse[PermissionResponse]:
-        return await permission_crud.get_page(db, page_num = page_num, page_size = page_size, filters=dict(dto))
+    async def query_by_page(self, db: AsyncSession, params: PermissionParam, page_num: int = 1, page_size: int = 10) -> PaginatedResponse[PermissionResponse]:
+        print(f"params:{params}")
+        return await permission_crud.get_page(db, page_num = page_num, page_size = page_size, filters=dict(params), schema=PermissionResponse)
      
 
     

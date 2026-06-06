@@ -1,5 +1,6 @@
 # 增删改查基类
 
+from __future__ import annotations
 from datetime import datetime
 from typing import Generic, Type, TypeVar, Any, overload
 import pydantic
@@ -35,17 +36,18 @@ class CRUDBase(Generic[ModelType]):
         )
         return list(result.scalars().all())
     
+    
     @overload
     async def get_page(
         self,
         db: AsyncSession,
         *,
-        page_num: int = ...,
-        page_size: int = ...,
-        filters: dict[str, Any] | None = ...,
-        order_by: tuple[str, str] | None = ...,
-        ignore_deleted: bool = ...,
-        schema: None = ...,
+        page_num: int = 1,
+        page_size: int = 10,
+        filters: dict[str, Any] | None = None,
+        order_by: tuple[str, str] | None = None,
+        ignore_deleted: bool = True,
+        schema: None = None,
     ) -> PaginatedResponse[ModelType]: ...
     
     @overload
@@ -53,12 +55,12 @@ class CRUDBase(Generic[ModelType]):
         self,
         db: AsyncSession,
         *,
-        page_num: int = ...,
-        page_size: int = ...,
-        filters: dict[str, Any] | None = ...,
-        order_by: tuple[str, str] | None = ...,
-        ignore_deleted: bool = ...,
-        schema: Type[T] = ...,
+        page_num: int = 1,
+        page_size: int = 10,
+        filters: dict[str, Any] | None = None,
+        order_by: tuple[str, str] | None = None,
+        ignore_deleted: bool = True,
+        schema: Type[T],
     ) -> PaginatedResponse[T]: ...
     
     async def get_page(
@@ -85,80 +87,6 @@ class CRUDBase(Generic[ModelType]):
             schema: 可选的 Pydantic schema 类，用于将 ORM 对象转换为指定格式
         
         Returns:
-            PaginatedResponse[ModelType] 或 PaginatedResponse[SchemaType]
-        """
-        query = select(self.model)
-        
-        # 自动过滤逻辑删除记录
-        if ignore_deleted and issubclass(self.model, LogicDeleteMixin):
-            query = query.where(self.model.is_deleted == False)
-        
-        # 应用过滤条件
-        if filters:
-            for field, condition in filters.items():
-                column = getattr(self.model, field, None)
-                if column is None:
-                    continue
-                query = query.where(self._build_filter_condition(column, condition))
-        
-        # 计算总数
-        count_query = select(func.count()).select_from(query.subquery())
-        total = (await db.execute(count_query)).scalar() or 0
-        
-        # 应用排序
-        if order_by:
-            field, direction = order_by
-            column = getattr(self.model, field, None)
-            if column is not None:
-                query = query.order_by(column.desc() if direction == "desc" else column.asc())
-        
-        # 分页查询
-        offset = (page_num - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-        result = await db.execute(query)
-        items = list(result.scalars().all())
-        
-        # 转换为指定 schema 类型
-        if schema is not None:
-            items = [schema.model_validate(item) for item in items]
-        
-        # 计算总页数
-        total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
-        
-        return PaginatedResponse(
-            items=items,
-            total=total,
-            page=page_num,
-            page_size=page_size,
-            total_pages=total_pages,
-        )
-        return result.scalar_one_or_none()
-    
-    
-    async def get_page(
-        self,
-        db: AsyncSession,
-        *,
-        page_num: int = 1,
-        page_size: int = 10,
-        filters: dict[str, Any] | None = None,
-        order_by: tuple[str, str] | None = None,
-        ignore_deleted: bool = True,
-        schema: Type | None = None,
-    ) -> PaginatedResponse[ModelType] | PaginatedResponse:
-        """
-        分页查询
-        
-        Args:
-            page_num: 页码，从 1 开始
-            page_size: 每页数量
-            filters: 过滤条件，格式 {"field": value} 或 {"field": ("op", value)}
-                     支持操作符: ==, !=, >, <, >=, <=, like, in
-            order_by: 排序，格式 ("field", "asc" | "desc")
-            ignore_deleted: 是否自动过滤逻辑删除记录
-            schema: 可选的 Pydantic schema 类，用于将 ORM 对象转换为指定格式
-        
-        Returns:
             PaginatedResponse 包含 items, total, page, page_size, total_pages
             如果传入 schema 参数，items 为 schema 类型列表；否则为 ModelType 列表
         """
@@ -172,7 +100,7 @@ class CRUDBase(Generic[ModelType]):
         if filters:
             for field, condition in filters.items():
                 column = getattr(self.model, field, None)
-                if column is None:
+                if column is None or condition is None:
                     continue
                 query = query.where(self._build_filter_condition(column, condition))
         
@@ -201,7 +129,7 @@ class CRUDBase(Generic[ModelType]):
         total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
         
         return PaginatedResponse(
-            items=items,
+            items=items, # type: ignore
             total=total,
             page=page_num,
             page_size=page_size,
