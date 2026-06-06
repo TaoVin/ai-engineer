@@ -109,3 +109,5 @@ websockets==16.0
 aiomysql==0.3.2
 gunicorn==26.0.0
 loguru==0.7.3
+hiredis==3.4.0
+redis==8.0.0

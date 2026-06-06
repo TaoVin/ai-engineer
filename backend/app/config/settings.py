@@ -59,13 +59,19 @@ class DatabaseConfig(BaseModel):
 
 # redis 配置
 class RedisConfig(BaseModel):
-    # 数据库配置
+    """Redis 配置"""
     ENABLE: bool = True
     HOST: str = "localhost"
     PORT: int = 6379
     USER: str = ""
     PASSWORD: str = ""
     DB_NAME: int = 1
+    KEY_PREFIX: str = "fastapi:"  # 全局键前缀
+    SOCKET_TIMEOUT: int = 5  # 套接字超时(秒)
+    SOCKET_CONNECT_TIMEOUT: int = 3  # 连接超时(秒)
+    RETRY_ON_TIMEOUT: bool = True  # 超时是否重试
+    MAX_CONNECTIONS: int = 20  # 连接池最大连接数
+    HEALTH_CHECK_INTERVAL: int = 10  # 健康检查间隔(秒)
 
 
 
@@ -137,6 +143,17 @@ class Setting(BaseSettings):
 
     # IP 归属地查询（登录时对外请求第三方 API，生产建议关闭）
     IP_LOCATION_ENABLE: bool = False
+    
+    # 安全认证配置
+    # 加密密钥
+    SECURITY_KEY: SecretStr = SecretStr("")
+    # token 过期时间 分钟
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # token 刷新时间 天
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    
+    
+    DEFAULT_PWD: SecretStr = SecretStr("")
     
     # 校验配置参数
     @field_validator("SERVER_PORT")

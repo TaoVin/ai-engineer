@@ -12,10 +12,13 @@ from app.schemas.system.user import (
     UserCreate,
     UserDto,
     UserParam,
+    UserPasswordUpdate,
     UserResponse,
 )
 from app.service.system import get_user_service
 from app.service.system.user_service import UserService
+from app.core.security import get_password_hash
+from app.config.settings import setting
 
 router = APIRouter()
 
@@ -40,6 +43,10 @@ async def create(
     db: Annotated[AsyncSession, Depends(get_db)],
     user_service: Annotated[UserService, Depends(get_user_service)],
 ):
+    if data.password:
+        data.password = get_password_hash(data.password)
+    else:
+        data.password = get_password_hash(setting.DEFAULT_PWD.get_secret_value())
     user = await user_service.create(db, obj_in=data.model_dump())
     return ResponseBase(
         data=UserResponse.model_validate(user) if user else None
@@ -103,16 +110,6 @@ async def query_detail(
     return ResponseBase(data=UserResponse.model_validate(user) if user else None)
 
 
-# 解绑角色
-@router.delete("/unbindRole/{id}", response_model=ResponseBase[bool], summary="用户解绑角色")
-async def unbind_role(
-    id: int,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
-    await user_service.unbind_role(db, id=id)
-    return ResponseBase(data=True)
-
 
 # 解绑角色
 @router.delete("/unbindRole/{id}", response_model=ResponseBase[bool], summary="用户解绑角色")
@@ -134,3 +131,22 @@ async def bind_role(
 ):
     await user_service.bind_role(db, dto=dto)
     return ResponseBase(data=True)
+
+
+# 增
+@router.post(
+    "/resetPwd", response_model=ResponseBase[bool], summary="重置"
+)
+async def resetPwd(
+    data: UserPasswordUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
+):
+    if data.password:
+        data.password = get_password_hash(data.password)
+    else:
+        data.password = get_password_hash(setting.DEFAULT_PWD.get_secret_value())
+    user = await user_service.update(db, obj_in=data.model_dump())
+    return ResponseBase(
+        data=True
+    )
