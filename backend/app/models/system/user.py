@@ -46,7 +46,7 @@ class User(BaseModel, LogicDeleteMixin):
         "Role",
         secondary="sys_user_role",
         back_populates="users",
-        lazy="select"
+        lazy="selectin"
     )
     
     def __repr__(self) -> str:

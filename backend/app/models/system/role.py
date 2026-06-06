@@ -35,12 +35,12 @@ class Role(BaseModel,LogicDeleteMixin):
         "User",
         secondary="sys_user_role",
         back_populates="roles",
-        lazy="select"
+        lazy="selectin"
     )
 
     permissions: Mapped[list["Permission"]] = relationship(
         "Permission",
         secondary="sys_role_permission",
         back_populates="roles",
-        lazy="select",
+        lazy="selectin",
     )

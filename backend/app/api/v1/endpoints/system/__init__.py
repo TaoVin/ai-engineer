@@ -14,12 +14,14 @@ system_api_router.include_router(
     tags=["用户"],
     responses={404: {"description": "未找到"}},
 )
+# 角色路由
 system_api_router.include_router(
     roles.router,
-    prefix="/role",
+    prefix="/roles",
     tags=["角色"],
     responses={404: {"description": "未找到"}},
 )
+# 权限路由
 system_api_router.include_router(
     permission.router,
     prefix="/permission",

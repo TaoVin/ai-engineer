@@ -44,7 +44,7 @@ class Permission(BaseModel, LogicDeleteMixin):
         "Role",
         secondary="sys_role_permission",
         back_populates="permissions",
-        lazy="select",
+        lazy="selectin",
     )
 
     

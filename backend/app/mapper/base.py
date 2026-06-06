@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Generic, Type, TypeVar, Any, overload
+from typing import Generic, Sequence, Type, TypeVar, Any, overload
 import pydantic
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import CursorResult, func, select, update, delete
@@ -171,6 +171,13 @@ class CRUDBase(Generic[ModelType]):
         await db.refresh(db_obj)
         return db_obj
     
+    async def create_batch(self, db: AsyncSession, *, obj_in: list[ModelType]) -> Sequence[ModelType]:
+        """创建记录"""
+        db.add_all(obj_in)
+        await db.flush()
+        return obj_in
+    
+    
     async def update(
         self, db: AsyncSession, *, db_obj: ModelType, obj_in: dict[str, Any]
     ) -> ModelType:
@@ -192,6 +199,25 @@ class CRUDBase(Generic[ModelType]):
             await db.delete(obj)
             await db.flush()
         return obj
+
+
+    async def remove_batch(self, db: AsyncSession, *, ids: list[int]) -> Sequence[ModelType] | None:
+        if not ids:
+            return None
+        
+        """删除记录"""
+        result = await db.execute(
+            select(self.model).where(self.model.id.in_(ids))
+        )
+        objs = result.scalars().fetchall()
+        if not objs:
+            return None
+        
+        for obj in objs:
+            await db.delete(obj)
+            
+        await db.flush() 
+        return objs
     
     async def remove_logic(self, db: AsyncSession, *, ids: list[int]) -> int:
         """删除记录"""
