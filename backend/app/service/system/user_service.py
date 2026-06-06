@@ -56,6 +56,10 @@ class UserService:
             raise ValueError("无效id, 更新失败")
         return await user_crud.update(db, db_obj=user, obj_in=obj_in)
 
+    # 解绑角色
+    async def unbind_role(self, db: AsyncSession, *, id: int) -> None:
+        await user_role_crud.remove(db, id=id)
+
     # 绑定角色
     async def bind_role(self, db: AsyncSession, *, dto: UserBindRoleDto) -> None:
         user = await self.query_by_id(db, id=dto.id)

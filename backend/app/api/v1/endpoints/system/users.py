@@ -103,6 +103,28 @@ async def query_detail(
     return ResponseBase(data=UserResponse.model_validate(user) if user else None)
 
 
+# 解绑角色
+@router.delete("/unbindRole/{id}", response_model=ResponseBase[bool], summary="用户解绑角色")
+async def unbind_role(
+    id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
+):
+    await user_service.unbind_role(db, id=id)
+    return ResponseBase(data=True)
+
+
+# 解绑角色
+@router.delete("/unbindRole/{id}", response_model=ResponseBase[bool], summary="用户解绑角色")
+async def unbind_role(
+    id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
+):
+    await user_service.unbind_role(db, id=id)
+    return ResponseBase(data=True)
+
+
 # 绑定角色
 @router.post("/bindRole", response_model=ResponseBase[bool], summary="用户绑定角色")
 async def bind_role(

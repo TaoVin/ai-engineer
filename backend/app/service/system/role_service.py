@@ -50,6 +50,11 @@ class RoleService:
         return await role_crud.update(db, db_obj=role, obj_in=obj_in)
     
     
+    # 解绑权限
+    async def unbind_permission(self, db: AsyncSession, *, id: int) -> None:
+        await role_permission_curd.remove(db, id=id)
+
+
     async def bindPermission(
         self, db: AsyncSession, *, dto: RoleBindPermissionDto,
     ) -> None:

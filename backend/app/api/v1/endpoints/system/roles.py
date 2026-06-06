@@ -89,7 +89,18 @@ async def query_detail(
 
 
 
-# 改
+# 解绑权限
+@router.delete("/unbindPermission/{id}", response_model=ResponseBase[bool], summary="角色解绑权限")
+async def unbind_permission(
+    id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    role_service: Annotated[RoleService, Depends(get_role_service)],
+):
+    await role_service.unbind_permission(db, id=id)
+    return ResponseBase(data=True)
+
+
+# 绑定权限
 @router.post("/bindPermission", response_model=ResponseBase[bool])
 async def bindPermission(
     db: Annotated[AsyncSession, Depends(get_db)],
