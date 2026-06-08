@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestLoggingMiddleware)
     # 跨域处理
     setup_cros_middleware(app)
-    app.include_router(api_router, prefix="/api/v1")
+    app.include_router(api_router)
 
     return app
 

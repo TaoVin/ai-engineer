@@ -38,8 +38,8 @@ def create_access_token(
         )
 
     to_encode = {
-        "expire": expire,
-        "subject": str(subject),
+        "exp": expire,
+        "sub": str(subject),
         "type": "access",
     }
     if extra_data:

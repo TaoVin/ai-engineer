@@ -6,13 +6,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException,status
 
 from app.config.settings import setting
-from app.core.deps import get_db
+from app.core.deps import get_current_user, get_db
 from app.core.redis import redis_manager
-from app.core.security import create_access_token, create_refresh_token, verify_password
+from app.core.security import create_access_token, create_refresh_token, verify_password, verify_token
+from app.models.system.user import User
 from app.schemas.base import ResponseBase
-from app.schemas.system.auth import LoginDto, LoginResponse
+from app.schemas.system.auth import LoginDto, LoginResponse, RefreshTokenRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.schemas.system.user import LoginUserResponse, UserResponse
 from app.service.system import get_user_service
 from app.service.system.user_service import UserService
 
@@ -43,11 +45,40 @@ async def login(dto: LoginDto, db: Annotated[AsyncSession, Depends(get_db)], use
     
     access_token = create_access_token(subject=user.id)
     refresh_token = create_refresh_token(subject=user.id)
+        
+    return ResponseBase(data=LoginResponse(access_token=access_token, refresh_token=refresh_token))
+
+@router.post("/refresh", response_model=ResponseBase[LoginResponse], summary="刷新token")
+async def refresh_token(
+    token_in: RefreshTokenRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user_service: Annotated[UserService, Depends(get_user_service)]
+):
+    payload = verify_token(token_in.refresh_token)
+    if not payload or payload.get("type") != 'refresh':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的刷新令牌"
+        )
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的刷新令牌"
+        )
+    user = await user_service.query_by_id(db, id=int(str(user_id)))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="认证失败"
+        )
     
-    # accesstoken 有效期设置分钟
-    await redis_manager.cache_set(f"access:{access_token}", user, expire=setting.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
-    
-    # refresh_token 有效期设置天
-    await redis_manager.cache_set(f"access:{refresh_token}", access_token, expire=setting.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
     
     return ResponseBase(data=LoginResponse(access_token=access_token, refresh_token=refresh_token))
+
+
+@router.get("/me", response_model=ResponseBase[LoginUserResponse])
+async def get_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """获取当前登录用户信息"""
+    return ResponseBase(data=LoginUserResponse.model_validate(current_user))

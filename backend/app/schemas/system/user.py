@@ -1,7 +1,7 @@
 """用户相关 Schema（DTO）"""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Set
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -68,3 +68,10 @@ class UserBindRoleDto(BaseModel):
 
     id: int = Field(..., description="用户主键id")
     role_ids: list[int] = Field(default=[], description="角色id集合")
+
+
+
+class LoginUserResponse(UserResponse):
+    role_keys: Set[str] = Field(default=set(), description="角色编码集合")
+    permission_keys: Set[str] = Field(default=set(), description="权限编码集合")
+     

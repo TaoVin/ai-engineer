@@ -12,3 +12,9 @@ class LoginDto(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str = Field(..., description="访问token")
     refresh_token: str = Field(..., description="访问token")
+    
+    
+    
+class RefreshTokenRequest(BaseModel):
+    """刷新 Token 请求"""
+    refresh_token: str
