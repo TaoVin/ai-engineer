@@ -210,6 +210,10 @@ class RedisManager:
     async def cache_get(self, key: str, expire: int | None = None) -> Any:
         """获取缓存，不存在时返回 None"""
         return await self.get(key)
+    
+    async def cache_set_no_expire(self, key: str, value: Any) -> bool:
+        """设置缓存，默认 5 分钟过期"""
+        return await self.set(key, value)
 
     async def cache_set(self, key: str, value: Any, expire: int = 300) -> bool:
         """设置缓存，默认 5 分钟过期"""
@@ -218,6 +222,28 @@ class RedisManager:
     async def cache_delete(self, key: str) -> int:
         """删除缓存"""
         return await self.delete(key)
+
+    # ──────────────────── Sorted Set 操作 ────────────────────
+
+    async def zadd(self, key: str, members: dict[str, float]) -> int:
+        """向有序集合添加成员，score 为浮点数"""
+        return await self.client.zadd(self._key(key), members)
+
+    async def zrevrange(
+        self, key: str, start: int = 0, end: int = -1, withscores: bool = False
+    ) -> list[Any]:
+        """按 score 降序返回范围内的成员"""
+        return await self.client.zrevrange(
+            self._key(key), start, end, withscores=withscores,
+        )
+
+    async def zcard(self, key: str) -> int:
+        """获取有序集合的基数（成员数量）"""
+        return await self.client.zcard(self._key(key))
+
+    async def zrem(self, key: str, *members: str) -> int:
+        """移除有序集合中的一个或多个成员"""
+        return await self.client.zrem(self._key(key), *members)
 
     # ──────────────────── 分布式锁 ────────────────────
 
