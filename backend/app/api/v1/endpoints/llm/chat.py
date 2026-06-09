@@ -19,13 +19,11 @@ from app.schemas.llm.chat import (
     SessionInfo,
     SessionListParams,
 )
+from app.service.llm import get_chat_service
+from app.service.llm.chat_service import ChatService
 
 router = APIRouter()
 
-# Redis key 模式
-_SESSION = "chat:session:{}"
-_MESSAGES = "chat:session:{}:messages"
-_INDEX = "chat:sessions"
 
 
 # ──────────────────────── 流式聊天 ────────────────────────
@@ -34,39 +32,13 @@ _INDEX = "chat:sessions"
 async def chat_stream(
     chat_req: ChatRequest,
     client: Annotated[AsyncOpenAI, Depends(get_client)],
+    chat_service: Annotated[ChatService, Depends(get_chat_service)]
 ):
     session_id = chat_req.session_id
     user_message = chat_req.message
-    meta_key = _SESSION.format(session_id)
-    msgs_key = _MESSAGES.format(session_id)
+  
+    
 
-    now = datetime.now()
-    session_exists = await redis_manager.hexists(meta_key, "name")
-
-    if not session_exists:
-        await redis_manager.hset_dict(meta_key, {
-            "name": user_message[:20],
-            "create_time": now.isoformat(),
-            "last_time": now.isoformat(),
-            "create_id": 0,
-        })
-        await redis_manager.zadd(_INDEX, {session_id: now.timestamp()})
-
-    # 追加用户消息
-    await redis_manager.rpush(msgs_key, {
-        "role": "user",
-        "content": user_message,
-    })
-
-    # 更新最后活跃时间 & 索引
-    now_iso = now.isoformat()
-    now_ts = now.timestamp()
-    await redis_manager.hset(meta_key, "last_time", now_iso)
-    await redis_manager.zadd(_INDEX, {session_id: now_ts})
-
-    # 加载全部消息供 AI 调用
-    raw_messages = await redis_manager.lrange(msgs_key, 0, -1)
-    openai_messages = [{"role": m["role"], "content": m["content"]} for m in raw_messages]
 
     async def event_generator():
         full_response = ""
@@ -82,8 +54,6 @@ async def chat_stream(
                     "role": "assistant",
                     "content": full_response,
                 })
-                await redis_manager.hset(meta_key, "last_time", finished_at.isoformat())
-                await redis_manager.zadd(_INDEX, {session_id: finished_at.timestamp()})
             elif obj.get("type") == "error":
                 print(f"Stream error: {obj['content']}")
 

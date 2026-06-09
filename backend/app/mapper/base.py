@@ -7,6 +7,7 @@ import pydantic
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import CursorResult, func, select, update, delete
 from sqlalchemy.sql import ColumnElement
+from app.core.deps import get_current_user
 from app.models.base import BaseModel, LogicDeleteMixin
 from app.schemas.base import PaginatedResponse
 

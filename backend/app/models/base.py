@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import Boolean, Integer, false, func, DateTime
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Boolean, ForeignKey, Integer, false, func, DateTime
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column, relationship
 
 
 # DeclarativeBase SQLAlchemy 2.0 的声明式基类
@@ -35,6 +35,20 @@ class BaseModel(Base):
         DateTime, default=func.now(), server_default=func.now(), comment="创建时间"
     )
 
+    created_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('sys_user.id'),
+        nullable=True,
+        comment="创建者id"
+    )
+
+    updated_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('sys_user.id'),
+        nullable=True,
+        comment="更新者id"
+    )
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=func.now(),
@@ -43,6 +57,14 @@ class BaseModel(Base):
         server_onupdate=func.now(),
         comment="更新时间",
     )
+
+    @declared_attr
+    def created_user(cls):
+        return  relationship("User", foreign_keys=[cls.created_id], lazy="selectin")
+
+    @declared_attr
+    def updated_user(cls):
+        return  relationship("User",foreign_keys=[cls.updated_id], lazy="selectin")
 
 
 # class IdMixin:
@@ -65,3 +87,10 @@ class LogicDeleteMixin:
     deleted_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, comment="删除时间"
     )
+    deleted_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('sys_user.id'),
+        nullable=True,
+        comment="删除者id"
+    )
+
