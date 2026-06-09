@@ -58,14 +58,6 @@ class BaseModel(Base):
         comment="更新时间",
     )
 
-    @declared_attr
-    def created_user(cls):
-        return  relationship("User", foreign_keys=[cls.created_id], lazy="selectin")
-
-    @declared_attr
-    def updated_user(cls):
-        return  relationship("User",foreign_keys=[cls.updated_id], lazy="selectin")
-
 
 # class IdMixin:
 #     """主键混入类"""
