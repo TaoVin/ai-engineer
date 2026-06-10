@@ -42,11 +42,15 @@ class User(BaseModel, LogicDeleteMixin):
     )
 
     # 使用字符串引用避免循环导入
+    # 注意: 必须显式指定 primaryjoin/secondaryjoin，因为 BaseModel 的
+    # created_id/updated_id 导致 sys_user_role 表有多个 FK 指向 sys_user
     roles: Mapped[list["Role"]] = relationship(
         "Role",
         secondary="sys_user_role",
         back_populates="users",
-        lazy="selectin"
+        lazy="selectin",
+        primaryjoin="User.id == foreign(UserRole.user_id)",
+        secondaryjoin="foreign(UserRole.role_id) == Role.id"
     )
     
     def __repr__(self) -> str:

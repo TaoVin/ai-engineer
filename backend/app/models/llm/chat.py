@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, String, text
+from sqlalchemy import DateTime, String, desc, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.mysql import LONGTEXT
 from app.enums.llm import MessageRole
@@ -45,7 +45,10 @@ class ChatMessage(BaseModel, LogicDeleteMixin):
         comment="工具调用id"
     )
 
-    session: Mapped["ChatSession"] = relationship(back_populates="messages")
+    session: Mapped["ChatSession"] = relationship(
+        back_populates="messages",
+        primaryjoin="foreign(ChatMessage.session_id) == ChatSession.session_id"
+    )
     
 class ChatSession(BaseModel, LogicDeleteMixin):
     """会话模型"""
@@ -72,7 +75,10 @@ class ChatSession(BaseModel, LogicDeleteMixin):
 
     messages: Mapped[list[ChatMessage]] = relationship(
         "ChatMessage",
-        back_populates="session"
+        back_populates="session",
+        primaryjoin="foreign(ChatMessage.session_id) == ChatSession.session_id",
+        lazy="selectin",
+        order_by="ChatMessage.created_at.desc()"
     )
 
 

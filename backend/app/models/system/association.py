@@ -21,8 +21,12 @@ class UserRole(BaseModel):
         Integer,  ForeignKey("sys_role.id"), nullable=False, comment="角色id"
     )
     
-    user: Mapped[User] =relationship("User")
-    role: Mapped[Role] =relationship("Role")
+    user: Mapped[User] = relationship(
+        "User", foreign_keys=[user_id], overlaps="roles,users"
+    )
+    role: Mapped[Role] = relationship(
+        "Role", foreign_keys=[role_id], overlaps="roles,users"
+    )
     
     # 联合唯一
     
@@ -41,8 +45,12 @@ class RolePermission(BaseModel):
         Integer,  ForeignKey("sys_permission.id"), nullable=False, comment="角色id"
     )
     
-    permission: Mapped[Permission] =relationship("Permission")
-    role: Mapped[Role] =relationship("Role")
+    permission: Mapped[Permission] = relationship(
+        "Permission", overlaps="permissions,roles"
+    )
+    role: Mapped[Role] = relationship(
+        "Role", overlaps="permissions,roles"
+    )
     
     # 联合唯一
     

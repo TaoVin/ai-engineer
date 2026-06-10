@@ -3,9 +3,11 @@ import json
 from datetime import datetime
 from typing import Annotated
 
+from pytest import param
+
 from app.core.deps import get_db
 from app.enums.llm import MessageRole
-from app.models.llm.chat import ChatSession
+from app.models.llm.chat import ChatMessage, ChatSession
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from openai import AsyncOpenAI
@@ -43,14 +45,18 @@ async def chat_stream(
 
     # 获取session
     session =await chat_service.get_chat_session(session_id, db)
-
+    messags = []
     if not session:
         session = ChatSession(name = user_message[0: 10], session_id = session_id, last_time=datetime.now())
-    
+    else: 
+        if session.messages:
+           messags = [MessageItem.model_validate(msg, from_attributes=True) for msg in session.messages]
+
+
     session.last_time = datetime.now()
-    await chat_service.update_session(session, db)
+    session_info = SessionInfo.model_validate(session)
+    session = await chat_service.update_session(session_info, db)
     
-    messags = session.messages
     # 创建当前记录
     current_message = MessageItem(role = MessageRole.USER, content = user_message, session_id = session_id)
     await chat_service.save_message(current_message, db)
@@ -66,96 +72,55 @@ async def chat_stream(
                 full_response += obj["content"]
             elif obj.get("type") == "done":
                 call_back_message = MessageItem(role = MessageRole.ASSISTANT, content = full_response, session_id = session_id)
-                await chat_service.save_message(call_back_message)
+                await chat_service.save_message(call_back_message, db)
             elif obj.get("type") == "error":
                 print(f"Stream error: {obj['content']}")
 
     return EventSourceResponse(event_generator())
 
 
-# # ──────────────────────── 会话列表 ────────────────────────
+# ──────────────────────── 会话列表 ────────────────────────
 
-# @router.get("/sessions", summary="获取会话列表")
-# async def list_sessions(
-#     params: Annotated[SessionListParams, Depends()],
-# ) -> ResponseBase[PaginatedResponse[SessionInfo]]:
-#     total = await redis_manager.zcard(_INDEX)
-#     if total == 0:
-#         return ResponseBase(data=PaginatedResponse[SessionInfo](
-#             items=[], total=0, page=params.page, page_size=params.page_size, total_pages=0,
-#         ))
-
-#     start = (params.page - 1) * params.page_size
-#     end = start + params.page_size - 1
-#     session_ids = await redis_manager.zrevrange(_INDEX, start, end)
-
-#     items: list[SessionInfo] = []
-#     for sid in session_ids:
-#         meta = await redis_manager.hgetall(_SESSION.format(sid))
-#         if not meta:
-#             continue
-#         msg_count = await redis_manager.llen(_MESSAGES.format(sid))
-#         items.append(SessionInfo(
-#             session_id=sid,
-#             name=meta.get("name", ""),
-#             create_time=datetime.fromisoformat(meta["create_time"]),
-#             last_time=datetime.fromisoformat(meta["last_time"]),
-#             message_count=msg_count,
-#         ))
-
-#     total_pages = (total + params.page_size - 1) // params.page_size
-#     return ResponseBase(data=PaginatedResponse[SessionInfo](
-#         items=items, total=total, page=params.page, page_size=params.page_size,
-#         total_pages=total_pages,
-#     ))
+@router.post("/sessions", summary="获取会话列表", description="默认取最后活跃的前10个， 会这根据条件查询", response_model=ResponseBase[list[SessionInfo]])
+async def list_sessions(
+    params: SessionListParams,
+    chat_service: Annotated[ChatService, Depends(get_chat_service)],
+    db: Annotated[AsyncSession, Depends(get_db)]
+) -> ResponseBase[list[SessionInfo]]:
+    
+    sessions =await chat_service.query_sessions(db, params= params)
+    return ResponseBase(data=[ SessionInfo.model_validate(session) for session in sessions] if sessions else [])
 
 
 # # ──────────────────────── 会话详情 ────────────────────────
 
-# @router.get("/sessions/{session_id}", summary="获取会话详情")
-# async def get_session(
-#     session_id: str,
-# ) -> ResponseBase[SessionDetail]:
-#     meta_key = _SESSION.format(session_id)
-#     msgs_key = _MESSAGES.format(session_id)
+@router.get("/sessions/{session_id}", summary="获取会话详情")
+async def get_session(
+    session_id: str,
+    chat_service: Annotated[ChatService, Depends(get_chat_service)],
+    db: Annotated[AsyncSession, Depends(get_db)]
+) -> ResponseBase[SessionDetail]:
+   
+    session =await chat_service.get_chat_session(session_id, db)
 
-#     meta = await redis_manager.hgetall(meta_key)
-#     if not meta:
-#         raise HTTPException(status_code=404, detail="会话不存在")
-
-#     raw_messages = await redis_manager.lrange(msgs_key, 0, -1)
-#     messages = [MessageItem(role=m["role"], content=m["content"]) for m in raw_messages]
-
-#     return ResponseBase(data=SessionDetail(
-#         session_id=session_id,
-#         name=meta.get("name", ""),
-#         create_time=datetime.fromisoformat(meta["create_time"]),
-#         last_time=datetime.fromisoformat(meta["last_time"]),
-#         messages=messages,
-#     ))
+    return ResponseBase(data=SessionDetail.model_validate(session) if session else None)
 
 
-# # ──────────────────────── 重命名会话 ────────────────────────
+# ──────────────────────── 重命名会话 ────────────────────────
 
-# @router.put("/sessions/{session_id}/name", summary="重命名会话")
-# async def rename_session(
-#     session_id: str,
-#     body: RenameRequest,
-# ) -> ResponseBase[SessionInfo]:
-#     meta_key = _SESSION.format(session_id)
+@router.put("/sessions/rename", summary="重命名会话")
+async def rename_session(
+    body: RenameRequest,
+    chat_service: Annotated[ChatService, Depends(get_chat_service)],
+    db: Annotated[AsyncSession, Depends(get_db)]
+) -> ResponseBase[SessionInfo]:
 
-#     exists = await redis_manager.exists(meta_key)
-#     if not exists:
-#         raise HTTPException(status_code=404, detail="会话不存在")
+    session =await chat_service.get_chat_session(body.session_id, db)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
 
-#     await redis_manager.hset(meta_key, "name", body.name)
-#     meta = await redis_manager.hgetall(meta_key)
-#     msg_count = await redis_manager.llen(_MESSAGES.format(session_id))
+    session.name = body.name
+    session = await chat_service.update_session(SessionInfo.model_validate(session), db=db)
 
-#     return ResponseBase(data=SessionInfo(
-#         session_id=session_id,
-#         name=body.name,
-#         create_time=datetime.fromisoformat(meta["create_time"]),
-#         last_time=datetime.fromisoformat(meta["last_time"]),
-#         message_count=msg_count,
-#     ))
+    return ResponseBase(data=SessionInfo.model_validate(session) if session else None)
