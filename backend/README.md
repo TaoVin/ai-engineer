@@ -251,6 +251,11 @@ chat_message       - 聊天消息表（会话ID、内容、角色、名称、工
 | `updated_at` | DateTime | 更新时间 |
 | `created_id` | Integer (FK) | 创建者 ID |
 | `updated_id` | Integer (FK) | 更新者 ID |
+
+部分继承LogicDeleteMixin，包含以下字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
 | `is_deleted` | Boolean | 逻辑删除标记 |
 | `deleted_at` | DateTime | 删除时间 |
 | `deleted_id` | Integer (FK) | 删除者 ID |
